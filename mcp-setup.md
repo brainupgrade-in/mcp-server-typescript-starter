@@ -18,6 +18,79 @@ Before you start, ensure you have:
 
 ---
 
+## Ubuntu Linux Setup
+
+### Install Node.js 20 LTS on Ubuntu
+
+```bash
+# Update package list
+sudo apt update
+
+# Install prerequisites
+sudo apt install -y curl
+
+# Add NodeSource repository (Node.js 20 LTS)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+
+# Install Node.js
+sudo apt install -y nodejs
+
+# Verify installation
+node --version   # Should show v20.x.x
+npm --version    # Should show 10.x.x
+```
+
+**Alternative: Using nvm (recommended for developers)**
+
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Reload shell
+source ~/.bashrc
+
+# Install Node.js 20
+nvm install 20
+nvm use 20
+nvm alias default 20
+
+# Verify
+node --version
+```
+
+### Install Claude Desktop on Ubuntu
+
+Claude Desktop is available as an AppImage or .deb package:
+
+**Option 1: Download .deb (Recommended)**
+
+```bash
+# Download from claude.ai/download (select Linux)
+# Then install:
+sudo dpkg -i claude-desktop_*.deb
+sudo apt install -f  # Fix any dependencies
+```
+
+**Option 2: AppImage**
+
+```bash
+# Download AppImage from claude.ai/download
+chmod +x Claude-*.AppImage
+./Claude-*.AppImage
+```
+
+### Ubuntu Config File Location
+
+```bash
+# Create config directory if it doesn't exist
+mkdir -p ~/.config/Claude
+
+# Config file path
+~/.config/Claude/claude_desktop_config.json
+```
+
+---
+
 ## Quick Start (5 Minutes)
 
 ### Step 1: Install a Pre-built MCP Server (2 min)
@@ -37,11 +110,44 @@ Find your Claude Desktop config file:
 
 | OS | Config Path |
 |----|-------------|
+| **Ubuntu/Linux** | `~/.config/Claude/claude_desktop_config.json` |
 | **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
-| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
 
-Create or edit the file with this content:
+**For Ubuntu Linux**, create or edit the config:
+
+```bash
+# Create directory if needed
+mkdir -p ~/.config/Claude
+
+# Edit config file
+nano ~/.config/Claude/claude_desktop_config.json
+```
+
+Add this content:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/YOUR_USERNAME/Documents"
+      ]
+    }
+  }
+}
+```
+
+> ⚠️ **Replace `YOUR_USERNAME`** with your actual Ubuntu username!
+> 
+> Find your username: `whoami`
+> 
+> Example path: `/home/rajesh/Documents`
+
+**For macOS users:**
 
 ```json
 {
@@ -58,13 +164,21 @@ Create or edit the file with this content:
 }
 ```
 
-> ⚠️ **Replace `/Users/YOUR_USERNAME/Documents`** with your actual path!
-
 ### Step 3: Restart Claude Desktop (30 sec)
 
-1. Quit Claude Desktop completely (not just close the window)
-2. Reopen Claude Desktop
-3. Look for the 🔨 hammer icon - this means MCP tools are available
+**Ubuntu:**
+```bash
+# Kill Claude Desktop
+pkill -f claude || pkill -f Claude
+
+# Restart Claude Desktop
+claude-desktop &
+# Or launch from application menu
+```
+
+**macOS/Windows:** Quit completely and reopen.
+
+Look for the 🔨 hammer icon - this means MCP tools are available.
 
 ### Step 4: Test It! (30 sec)
 
@@ -116,16 +230,35 @@ This opens a browser-based inspector where you can:
 
 Update your `claude_desktop_config.json`:
 
+**Ubuntu Linux:**
+
 ```json
 {
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Documents"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/YOUR_USERNAME/Documents"]
     },
     "notes": {
       "command": "node",
-      "args": ["/home/rajesh/mcp-server-typescript-starter/dist/index.js"]
+      "args": ["/home/YOUR_USERNAME/mcp-server-typescript-starter/dist/index.js"]
+    }
+  }
+}
+```
+
+**macOS:**
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/YOUR_USERNAME/Documents"]
+    },
+    "notes": {
+      "command": "node",
+      "args": ["/Users/YOUR_USERNAME/mcp-server-typescript-starter/dist/index.js"]
     }
   }
 }
@@ -158,7 +291,7 @@ You can run multiple servers simultaneously:
     },
     "notes": {
       "command": "node",
-      "args": ["/path/to/mcp-server-typescript-starter/dist/index.js"]
+      "args": ["/home/rajesh/mcp-server-typescript-starter/dist/index.js"]
     },
     "github": {
       "command": "npx",
@@ -187,7 +320,17 @@ Each server appears as a separate set of tools in Claude.
 
 ### Check Server Logs
 
-**macOS/Linux:**
+**Ubuntu Linux:**
+```bash
+# Claude Desktop logs
+tail -f ~/.config/Claude/logs/mcp*.log
+
+# Or check all Claude logs
+ls -la ~/.config/Claude/logs/
+cat ~/.config/Claude/logs/mcp-server-*.log
+```
+
+**macOS:**
 ```bash
 tail -f ~/Library/Logs/Claude/mcp*.log
 ```
@@ -197,31 +340,69 @@ tail -f ~/Library/Logs/Claude/mcp*.log
 Get-Content $env:APPDATA\Claude\logs\mcp*.log -Wait
 ```
 
+### Ubuntu-Specific Issues
+
+| Issue | Solution |
+|-------|----------|
+| `npx: command not found` | Reinstall Node.js or add to PATH |
+| Permission denied | Check file permissions: `chmod +x` |
+| Node not found by Claude | Use full path: `/usr/bin/node` |
+| nvm node not found | Use nvm node path (see below) |
+
+**If using nvm on Ubuntu:**
+
+```bash
+# Find your nvm node path
+which node
+# Example output: /home/rajesh/.nvm/versions/node/v20.10.0/bin/node
+
+# Use full path in config
+{
+  "mcpServers": {
+    "notes": {
+      "command": "/home/rajesh/.nvm/versions/node/v20.10.0/bin/node",
+      "args": ["/home/rajesh/mcp-server-typescript-starter/dist/index.js"]
+    }
+  }
+}
+```
+
 ### Verify Node.js Path
 
 If Claude can't find Node.js:
+
+```bash
+# Find node path
+which node
+
+# Common paths:
+# System install: /usr/bin/node
+# NodeSource: /usr/bin/node  
+# nvm: ~/.nvm/versions/node/v20.x.x/bin/node
+```
+
+Use the full path in your config:
 
 ```json
 {
   "mcpServers": {
     "notes": {
-      "command": "/usr/local/bin/node",
+      "command": "/usr/bin/node",
       "args": ["/full/path/to/dist/index.js"]
     }
   }
 }
 ```
 
-Find your Node.js path: `which node` (macOS/Linux) or `where node` (Windows)
-
 ### Common Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `ENOENT` | Path not found | Use absolute paths |
-| `EACCES` | Permission denied | Check file permissions |
+| `EACCES` | Permission denied | `chmod +x` or check ownership |
 | `MODULE_NOT_FOUND` | Missing dependencies | Run `npm install` |
 | `SyntaxError` | Build not run | Run `npm run build` |
+| `ECONNREFUSED` | Server not running | Check server logs |
 
 ---
 
@@ -230,6 +411,8 @@ Find your Node.js path: `which node` (macOS/Linux) or `where node` (Windows)
 After setup, verify everything works:
 
 - [ ] `node --version` shows 18+
+- [ ] `npm --version` shows 9+
+- [ ] Config file exists at correct path
 - [ ] `npm run build` completes without errors
 - [ ] `npm run inspector` opens browser tool
 - [ ] Claude Desktop shows 🔨 icon
@@ -255,14 +438,14 @@ After setup, verify everything works:
 ### Config File Locations
 
 ```bash
+# Ubuntu/Linux
+~/.config/Claude/claude_desktop_config.json
+
 # macOS
 ~/Library/Application Support/Claude/claude_desktop_config.json
 
 # Windows
 %APPDATA%\Claude\claude_desktop_config.json
-
-# Linux
-~/.config/Claude/claude_desktop_config.json
 ```
 
 ### Useful Commands
@@ -279,6 +462,12 @@ npm run dev
 
 # Check Node version
 node --version
+
+# Find node path (for config)
+which node
+
+# Ubuntu: Restart Claude Desktop
+pkill -f claude && claude-desktop &
 ```
 
 ### Popular MCP Servers
@@ -298,6 +487,7 @@ node --version
 - [Claude Desktop Download](https://claude.ai/download)
 - [MCP Servers Repository](https://github.com/modelcontextprotocol/servers)
 - [MCP Inspector](https://github.com/modelcontextprotocol/inspector)
+- [NodeSource (Node.js for Ubuntu)](https://github.com/nodesource/distributions)
 
 ---
 
