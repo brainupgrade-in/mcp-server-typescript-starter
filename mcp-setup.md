@@ -1,239 +1,128 @@
-# MCP Architecture & Setup Guide
+# MCP Server Installation Guide
 
-This guide accompanies **Video 2: MCP Architecture** from the [Gheware DevOps AI](https://www.youtube.com/@gheware-devops-ai) MCP Masterclass.
+This guide accompanies **Video 3: Install Your First MCP Server** from the [Gheware DevOps AI](https://www.youtube.com/@gheware-devops-ai) MCP Masterclass.
 
-📺 **Watch:** [MCP? It's JUST 3 Parts. (Here's How It Works)](https://www.youtube.com/watch?v=t7O9T6UxK5k)
-
----
-
-## The 3 Components of MCP
-
-MCP (Model Context Protocol) has exactly **3 components**. That's it.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                           HOST                                   │
-│                    (Claude Desktop, Cursor, VS Code)             │
-│                                                                  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │   CLIENT    │  │   CLIENT    │  │   CLIENT    │              │
-│  │  (built-in) │  │  (built-in) │  │  (built-in) │              │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘              │
-└─────────┼────────────────┼────────────────┼─────────────────────┘
-          │                │                │
-          │ JSON-RPC       │ JSON-RPC       │ JSON-RPC
-          │ (stdio)        │ (stdio)        │ (SSE)
-          ▼                ▼                ▼
-   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-   │    SERVER    │ │    SERVER    │ │    SERVER    │
-   │  (Filesystem)│ │   (Notes)    │ │  (Database)  │
-   │              │ │  ◄── THIS    │ │              │
-   │              │ │      REPO    │ │              │
-   └──────────────┘ └──────────────┘ └──────────────┘
-```
+📺 **Watch:** [Install MCP in 5 Minutes. (Yes, Really.)](https://www.youtube.com/watch?v=lbLNb2eNmf8)
 
 ---
 
-## Component 1: HOST
+## Prerequisites
 
-**What it is:** The AI application you're using.
+Before you start, ensure you have:
 
-**Examples:**
-- Claude Desktop
-- Cursor IDE
-- VS Code with Copilot
-- Windsurf
-- Your own AI app
-
-**Responsibilities:**
-- Manages multiple MCP clients
-- Provides the user interface
-- Routes requests to appropriate clients
+| Requirement | Version | Check Command |
+|-------------|---------|---------------|
+| Node.js | 18+ | `node --version` |
+| npm | 9+ | `npm --version` |
+| Claude Desktop | Latest | Download from [claude.ai/download](https://claude.ai/download) |
 
 ---
 
-## Component 2: CLIENT
+## Quick Start (5 Minutes)
 
-**What it is:** The messenger that lives inside the Host.
+### Step 1: Install a Pre-built MCP Server (2 min)
 
-**Key facts:**
-- Built into the Host (you don't build this)
-- One client per server connection
-- Speaks the MCP protocol (JSON-RPC)
-
-**Responsibilities:**
-- Discovers server capabilities
-- Sends tool calls to servers
-- Receives results and forwards to Host
-
----
-
-## Component 3: SERVER
-
-**What it is:** The tool provider (like this repository!).
-
-**Examples:**
-- Filesystem server (read/write files)
-- Database server (query SQL)
-- **Notes server (this repo)**
-- GitHub server (manage repos)
-- Slack server (send messages)
-
-**Responsibilities:**
-- Expose **Tools** (operations AI can perform)
-- Expose **Resources** (data AI can read)
-- Expose **Prompts** (pre-defined instructions)
-
----
-
-## How They Communicate
-
-### Protocol: JSON-RPC 2.0
-
-All MCP communication uses JSON-RPC over one of two transports:
-
-| Transport | Use Case | How It Works |
-|-----------|----------|--------------|
-| **stdio** | Local servers | Server runs as subprocess, communicates via stdin/stdout |
-| **SSE** | Remote servers | Server exposes HTTP endpoint with Server-Sent Events |
-
-### Message Flow
-
-```
-User: "Add a note about Docker"
-         │
-         ▼
-┌─────────────────┐
-│      HOST       │  1. User sends message
-│  (Claude)       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│     CLIENT      │  2. Client translates to MCP tool call
-│                 │
-└────────┬────────┘
-         │
-         │  JSON-RPC Request:
-         │  {
-         │    "method": "tools/call",
-         │    "params": {
-         │      "name": "add_note",
-         │      "arguments": {
-         │        "title": "Docker",
-         │        "content": "..."
-         │      }
-         │    }
-         │  }
-         ▼
-┌─────────────────┐
-│     SERVER      │  3. Server executes tool
-│   (Notes)       │
-└────────┬────────┘
-         │
-         │  JSON-RPC Response:
-         │  {
-         │    "result": {
-         │      "content": [{
-         │        "type": "text",
-         │        "text": "Note created!"
-         │      }]
-         │    }
-         │  }
-         ▼
-┌─────────────────┐
-│     CLIENT      │  4. Client receives result
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│      HOST       │  5. Host displays to user
-│  (Claude)       │
-└─────────────────┘
-
-User sees: "Note created!"
-```
-
----
-
-## Where This Repo Fits
-
-This repository (`mcp-server-typescript-starter`) is a **SERVER**.
-
-```
-You are building THIS
-         │
-         ▼
-┌─────────────────────────────────────────────┐
-│              MCP SERVER                      │
-│         "Notes Manager"                      │
-│                                              │
-│  ┌─────────────────────────────────────┐    │
-│  │            TOOLS                     │    │
-│  │  • add_note                          │    │
-│  │  • list_notes                        │    │
-│  │  • search_notes                      │    │
-│  │  • delete_note                       │    │
-│  └─────────────────────────────────────┘    │
-│                                              │
-│  ┌─────────────────────────────────────┐    │
-│  │          RESOURCES                   │    │
-│  │  • notes://list                      │    │
-│  │  • notes://note/{id}                 │    │
-│  └─────────────────────────────────────┘    │
-│                                              │
-│  Transport: stdio (stdin/stdout)             │
-│  Protocol: JSON-RPC 2.0                      │
-└─────────────────────────────────────────────┘
-```
-
----
-
-## The 3 Primitives
-
-Every MCP server can expose three types of capabilities:
-
-| Primitive | Controller | Description | Example |
-|-----------|------------|-------------|---------|
-| **Tools** | Model (AI) | Operations the AI can invoke | `add_note`, `search_notes` |
-| **Resources** | Application | Read-only data the AI can access | `notes://list` |
-| **Prompts** | User | Pre-defined instruction templates | "Format as markdown" |
-
-### This Repo Implements:
-
-✅ **Tools** - 4 operations for note management  
-✅ **Resources** - 2 data endpoints  
-⬜ **Prompts** - Not implemented (exercise for viewer)
-
----
-
-## Setup Verification
-
-After following [Video 3: Install Your First MCP Server](https://www.youtube.com/watch?v=lbLNb2eNmf8), verify your setup:
-
-### 1. Build the Server
+The fastest way to get started is with the official **Filesystem MCP Server**:
 
 ```bash
-cd /home/rajesh/mcp-server-typescript-starter
+# No installation needed - npx runs it directly
+npx -y @modelcontextprotocol/server-filesystem ~/Documents
+```
+
+This server lets Claude read files from your `~/Documents` folder.
+
+### Step 2: Configure Claude Desktop (2 min)
+
+Find your Claude Desktop config file:
+
+| OS | Config Path |
+|----|-------------|
+| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+
+Create or edit the file with this content:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/YOUR_USERNAME/Documents"
+      ]
+    }
+  }
+}
+```
+
+> ⚠️ **Replace `/Users/YOUR_USERNAME/Documents`** with your actual path!
+
+### Step 3: Restart Claude Desktop (30 sec)
+
+1. Quit Claude Desktop completely (not just close the window)
+2. Reopen Claude Desktop
+3. Look for the 🔨 hammer icon - this means MCP tools are available
+
+### Step 4: Test It! (30 sec)
+
+Try these prompts in Claude Desktop:
+
+```
+"List files in my Documents folder"
+
+"Read the contents of README.md"
+
+"What text files do I have?"
+```
+
+---
+
+## Installing This Notes Server
+
+Once you've verified the filesystem server works, try this custom server:
+
+### Step 1: Clone and Build
+
+```bash
+# Clone the repository
+git clone https://github.com/brainupgrade-in/mcp-server-typescript-starter.git
+cd mcp-server-typescript-starter
+
+# Install dependencies
 npm install
+
+# Build TypeScript
 npm run build
 ```
 
-### 2. Test with MCP Inspector
+### Step 2: Test with MCP Inspector
+
+Before connecting to Claude, test your server:
 
 ```bash
 npm run inspector
 ```
 
-This opens a browser-based tool to test your server without Claude Desktop.
+This opens a browser-based inspector where you can:
+- See available tools
+- Test tool calls
+- View resources
+- Debug issues
 
-### 3. Configure Claude Desktop
+### Step 3: Add to Claude Desktop
 
-Add to your `claude_desktop_config.json`:
+Update your `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Documents"]
+    },
     "notes": {
       "command": "node",
       "args": ["/home/rajesh/mcp-server-typescript-starter/dist/index.js"]
@@ -242,49 +131,173 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-**Config file locations:**
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+### Step 4: Restart and Test
 
-### 4. Restart Claude Desktop
+Restart Claude Desktop, then try:
 
-After saving the config, restart Claude Desktop completely.
+```
+"List all my notes"
 
-### 5. Verify Connection
+"Add a note about Docker with tags devops and containers"
 
-In Claude Desktop, you should see a hammer 🔨 icon indicating tools are available.
+"Search for notes about devops"
+```
 
-Try: *"List all my notes"*
+---
+
+## Multiple MCP Servers
+
+You can run multiple servers simultaneously:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Documents"]
+    },
+    "notes": {
+      "command": "node",
+      "args": ["/path/to/mcp-server-typescript-starter/dist/index.js"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "your-github-token"
+      }
+    }
+  }
+}
+```
+
+Each server appears as a separate set of tools in Claude.
 
 ---
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Server not appearing | Check the path in config is absolute |
-| "spawn ENOENT" error | Ensure Node.js is in PATH |
-| Tools not working | Check `npm run build` completed without errors |
-| No hammer icon | Restart Claude Desktop completely |
+### Server Not Appearing
+
+| Symptom | Solution |
+|---------|----------|
+| No 🔨 icon | Restart Claude Desktop completely |
+| "spawn ENOENT" | Use absolute paths in config |
+| Server crashes | Run `npm run build` again |
+
+### Check Server Logs
+
+**macOS/Linux:**
+```bash
+tail -f ~/Library/Logs/Claude/mcp*.log
+```
+
+**Windows:**
+```powershell
+Get-Content $env:APPDATA\Claude\logs\mcp*.log -Wait
+```
+
+### Verify Node.js Path
+
+If Claude can't find Node.js:
+
+```json
+{
+  "mcpServers": {
+    "notes": {
+      "command": "/usr/local/bin/node",
+      "args": ["/full/path/to/dist/index.js"]
+    }
+  }
+}
+```
+
+Find your Node.js path: `which node` (macOS/Linux) or `where node` (Windows)
+
+### Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `ENOENT` | Path not found | Use absolute paths |
+| `EACCES` | Permission denied | Check file permissions |
+| `MODULE_NOT_FOUND` | Missing dependencies | Run `npm install` |
+| `SyntaxError` | Build not run | Run `npm run build` |
 
 ---
 
-## Next Steps
+## Verification Checklist
 
-1. **Video 4:** [Build Your Own MCP Server](https://www.youtube.com/playlist?list=PLqGvN2U9LT-ukrMpG3SsyjtwK72qjIc54) - Walk through this code
-2. **Video 5:** Real-World MCP - Connect AI to a database
-3. **Challenge:** Add a `update_note` tool to this server
+After setup, verify everything works:
+
+- [ ] `node --version` shows 18+
+- [ ] `npm run build` completes without errors
+- [ ] `npm run inspector` opens browser tool
+- [ ] Claude Desktop shows 🔨 icon
+- [ ] "List all notes" returns sample notes
+- [ ] "Add a note about X" creates new note
+
+---
+
+## What's Next?
+
+| Video | Topic | Link |
+|-------|-------|------|
+| ✅ Video 1 | What is MCP? | [Watch](https://www.youtube.com/watch?v=sMzEGEv-6-4) |
+| ✅ Video 2 | MCP Architecture | [Watch](https://www.youtube.com/watch?v=t7O9T6UxK5k) |
+| ✅ Video 3 | Install MCP Server | [Watch](https://www.youtube.com/watch?v=lbLNb2eNmf8) |
+| 📍 Video 4 | Build Your Own Server | Coming soon |
+| 📍 Video 5 | AI + Database | Coming soon |
+
+---
+
+## Quick Reference
+
+### Config File Locations
+
+```bash
+# macOS
+~/Library/Application Support/Claude/claude_desktop_config.json
+
+# Windows
+%APPDATA%\Claude\claude_desktop_config.json
+
+# Linux
+~/.config/Claude/claude_desktop_config.json
+```
+
+### Useful Commands
+
+```bash
+# Build this server
+npm run build
+
+# Test with inspector
+npm run inspector
+
+# Watch mode (auto-rebuild)
+npm run dev
+
+# Check Node version
+node --version
+```
+
+### Popular MCP Servers
+
+| Server | Install | Purpose |
+|--------|---------|---------|
+| Filesystem | `npx -y @modelcontextprotocol/server-filesystem ~/path` | Read local files |
+| GitHub | `npx -y @modelcontextprotocol/server-github` | Manage repos |
+| Postgres | `npx -y @modelcontextprotocol/server-postgres` | Query databases |
+| Memory | `npx -y @modelcontextprotocol/server-memory` | Persistent memory |
 
 ---
 
 ## Resources
 
-- [MCP Official Docs](https://modelcontextprotocol.io)
-- [MCP Specification](https://modelcontextprotocol.io/specification)
-- [MCP Architecture](https://modelcontextprotocol.io/docs/concepts/architecture)
-- [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
-- [Anthropic MCP Course](https://anthropic.skilljar.com/introduction-to-model-context-protocol)
+- [MCP Quickstart](https://modelcontextprotocol.io/quickstart)
+- [Claude Desktop Download](https://claude.ai/download)
+- [MCP Servers Repository](https://github.com/modelcontextprotocol/servers)
+- [MCP Inspector](https://github.com/modelcontextprotocol/inspector)
 
 ---
 
