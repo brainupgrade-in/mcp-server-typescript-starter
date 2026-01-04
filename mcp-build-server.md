@@ -1,8 +1,12 @@
 # Build Your Own MCP Server (TypeScript)
 
+> **Last Updated:** January 2026
+
 This guide accompanies **Video 4: Build Your Own MCP Server** from the [Gheware DevOps AI](https://www.youtube.com/@gheware-devops-ai) MCP Masterclass.
 
 📺 **Watch the full playlist:** [MCP Masterclass](https://www.youtube.com/playlist?list=PLqGvN2U9LT-ukrMpG3SsyjtwK72qjIc54)
+
+📖 **Setup Guide:** [mcp-setup.md](./mcp-setup.md) - Install prerequisites and configure your MCP host
 
 ---
 
@@ -769,12 +773,34 @@ Try adding this yourself:
 
 ---
 
+## MCP Masterclass Videos
+
+| # | Video | Status | Link |
+|---|-------|--------|------|
+| 1 | What is MCP? | ✅ Published | [Watch](https://www.youtube.com/watch?v=sMzEGEv-6-4) |
+| 2 | MCP Architecture | ✅ Published | [Watch](https://www.youtube.com/watch?v=t7O9T6UxK5k) |
+| 3 | Install MCP Server | ✅ Published | [Watch](https://www.youtube.com/watch?v=lbLNb2eNmf8) |
+| 4 | **Build Your Own Server** | 📍 YOU ARE HERE | Coming Soon |
+| 5 | AI + Database | ⏳ Pending | Coming Soon |
+
+---
+
 ## Resources
 
+### Official Documentation
 - [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
 - [MCP Specification](https://modelcontextprotocol.io/specification)
 - [Building MCP Servers](https://modelcontextprotocol.io/docs/concepts/servers)
+- [Tools Documentation](https://modelcontextprotocol.io/docs/concepts/tools)
+- [Resources Documentation](https://modelcontextprotocol.io/docs/concepts/resources)
+
+### Learning
 - [Anthropic MCP Course](https://anthropic.skilljar.com/introduction-to-model-context-protocol)
+- [MCP Server Examples](https://github.com/modelcontextprotocol/servers)
+
+### This Repository
+- [Setup Guide](./mcp-setup.md) - Installation and configuration
+- [Example Config](./examples/claude_desktop_config.json) - Claude Desktop configuration
 
 ---
 
