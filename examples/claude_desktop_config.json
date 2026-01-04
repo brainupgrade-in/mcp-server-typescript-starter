@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "notes": {
+    "greeting": {
       "command": "node",
       "args": ["/home/rajesh/mcp-server-typescript-starter/dist/index.js"]
     }

@@ -1,7 +1,7 @@
 {
-  "name": "mcp-server-notes",
+  "name": "mcp-server-greeting",
   "version": "1.0.0",
-  "description": "A simple MCP server for managing notes - Tutorial companion for Gheware DevOps AI",
+  "description": "A simple MCP greeting server - Tutorial companion for Gheware DevOps AI Video 4",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

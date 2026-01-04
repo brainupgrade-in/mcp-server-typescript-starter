@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * MCP Server: Notes Manager
- * 
+ * MCP Server: Greeting Server
+ *
  * A simple MCP server demonstrating TOOLs and RESOURCEs.
  * Tutorial companion for: "Build Your Own MCP Server (TypeScript)"
  * Channel: Gheware DevOps AI
- * 
+ *
  * Features:
- * - TOOLS: add_note, list_notes, search_notes, delete_note
- * - RESOURCES: notes://list, notes://note/{id}
+ * - TOOL: create_greeting - Generate personalized greetings
+ * - RESOURCE: greeting://templates - List available greeting styles
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -23,51 +23,12 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // ============================================
-// DATA STORE (In-memory for simplicity)
-// ============================================
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  tags: string[];
-}
-
-const notes: Map<string, Note> = new Map();
-
-// Add some sample notes
-notes.set("1", {
-  id: "1",
-  title: "Welcome to MCP",
-  content: "This is your first note created with the MCP Notes Server!",
-  createdAt: new Date().toISOString(),
-  tags: ["welcome", "mcp"],
-});
-
-notes.set("2", {
-  id: "2",
-  title: "Docker Basics",
-  content: "Docker containers are lightweight, portable units of software.",
-  createdAt: new Date().toISOString(),
-  tags: ["docker", "devops"],
-});
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-// ============================================
 // MCP SERVER SETUP
 // ============================================
 
 const server = new Server(
   {
-    name: "notes-manager",
+    name: "greeting-server",
     version: "1.0.0",
   },
   {
@@ -86,62 +47,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "add_note",
-        description: "Create a new note with a title, content, and optional tags",
+        name: "create_greeting",
+        description: "Create a personalized greeting message",
         inputSchema: {
           type: "object" as const,
           properties: {
-            title: {
+            name: {
               type: "string",
-              description: "The title of the note",
+              description: "The name of the person to greet",
             },
-            content: {
+            style: {
               type: "string",
-              description: "The content/body of the note",
-            },
-            tags: {
-              type: "array",
-              items: { type: "string" },
-              description: "Optional tags to categorize the note",
+              enum: ["formal", "casual", "excited"],
+              description: "The style of greeting (formal, casual, or excited)",
             },
           },
-          required: ["title", "content"],
-        },
-      },
-      {
-        name: "list_notes",
-        description: "List all notes with their IDs and titles",
-        inputSchema: {
-          type: "object" as const,
-          properties: {},
-        },
-      },
-      {
-        name: "search_notes",
-        description: "Search notes by title, content, or tags",
-        inputSchema: {
-          type: "object" as const,
-          properties: {
-            query: {
-              type: "string",
-              description: "Search query to find in notes",
-            },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "delete_note",
-        description: "Delete a note by its ID",
-        inputSchema: {
-          type: "object" as const,
-          properties: {
-            id: {
-              type: "string",
-              description: "The ID of the note to delete",
-            },
-          },
-          required: ["id"],
+          required: ["name"],
         },
       },
     ],
@@ -151,104 +72,31 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  switch (name) {
-    case "add_note": {
-      const { title, content, tags = [] } = args as {
-        title: string;
-        content: string;
-        tags?: string[];
-      };
+  if (name === "create_greeting") {
+    const { name: personName, style = "casual" } = args as {
+      name: string;
+      style?: "formal" | "casual" | "excited";
+    };
 
-      const id = generateId();
-      const note: Note = {
-        id,
-        title,
-        content,
-        createdAt: new Date().toISOString(),
-        tags,
-      };
+    const greetings: Record<string, string> = {
+      formal: `Good day, ${personName}. It is a pleasure to meet you.`,
+      casual: `Hi ${personName}! How's it going?`,
+      excited: `Hey ${personName}!!! So awesome to see you! 🎉`,
+    };
 
-      notes.set(id, note);
+    const greeting = greetings[style] || greetings.casual;
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Note created successfully!\nID: ${id}\nTitle: ${title}\nTags: ${tags.join(", ") || "none"}`,
-          },
-        ],
-      };
-    }
-
-    case "list_notes": {
-      const noteList = Array.from(notes.values()).map(
-        (n) => `- [${n.id}] ${n.title} (${n.tags.join(", ") || "no tags"})`
-      );
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text:
-              noteList.length > 0
-                ? `Found ${noteList.length} notes:\n${noteList.join("\n")}`
-                : "No notes found. Use add_note to create one!",
-          },
-        ],
-      };
-    }
-
-    case "search_notes": {
-      const { query } = args as { query: string };
-      const lowerQuery = query.toLowerCase();
-
-      const matches = Array.from(notes.values()).filter(
-        (n) =>
-          n.title.toLowerCase().includes(lowerQuery) ||
-          n.content.toLowerCase().includes(lowerQuery) ||
-          n.tags.some((t) => t.toLowerCase().includes(lowerQuery))
-      );
-
-      const results = matches.map(
-        (n) => `- [${n.id}] ${n.title}\n  ${n.content.substring(0, 100)}...`
-      );
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text:
-              results.length > 0
-                ? `Found ${results.length} matching notes:\n${results.join("\n\n")}`
-                : `No notes found matching "${query}"`,
-          },
-        ],
-      };
-    }
-
-    case "delete_note": {
-      const { id } = args as { id: string };
-
-      if (!notes.has(id)) {
-        throw new McpError(ErrorCode.InvalidRequest, `Note with ID "${id}" not found`);
-      }
-
-      const note = notes.get(id)!;
-      notes.delete(id);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Deleted note: "${note.title}" (ID: ${id})`,
-          },
-        ],
-      };
-    }
-
-    default:
-      throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: greeting,
+        },
+      ],
+    };
   }
+
+  throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
 });
 
 // ============================================
@@ -256,22 +104,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // ============================================
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  const noteResources = Array.from(notes.values()).map((note) => ({
-    uri: `notes://note/${note.id}`,
-    name: note.title,
-    description: `Note: ${note.title} (${note.tags.join(", ") || "no tags"})`,
-    mimeType: "application/json",
-  }));
-
   return {
     resources: [
       {
-        uri: "notes://list",
-        name: "All Notes",
-        description: "List of all notes in the system",
-        mimeType: "application/json",
+        uri: "greeting://templates",
+        name: "Greeting Templates",
+        description: "Available greeting styles and examples",
+        mimeType: "text/plain",
       },
-      ...noteResources,
     ],
   };
 });
@@ -279,34 +119,24 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
 
-  if (uri === "notes://list") {
-    const allNotes = Array.from(notes.values());
+  if (uri === "greeting://templates") {
     return {
       contents: [
         {
           uri,
-          mimeType: "application/json",
-          text: JSON.stringify(allNotes, null, 2),
-        },
-      ],
-    };
-  }
+          mimeType: "text/plain",
+          text: `Available Greeting Styles:
 
-  const match = uri.match(/^notes:\/\/note\/(.+)$/);
-  if (match) {
-    const noteId = match[1];
-    const note = notes.get(noteId);
+1. formal - Professional, polite greeting
+   Example: "Good day, John. It is a pleasure to meet you."
 
-    if (!note) {
-      throw new McpError(ErrorCode.InvalidRequest, `Note not found: ${noteId}`);
-    }
+2. casual - Friendly, everyday greeting
+   Example: "Hi John! How's it going?"
 
-    return {
-      contents: [
-        {
-          uri,
-          mimeType: "application/json",
-          text: JSON.stringify(note, null, 2),
+3. excited - Enthusiastic, celebratory greeting
+   Example: "Hey John!!! So awesome to see you! 🎉"
+
+Usage: Ask Claude to "greet [name] in [style] style"`,
         },
       ],
     };
@@ -322,7 +152,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("MCP Notes Server running on stdio");
+  console.error("MCP Greeting Server running on stdio");
 }
 
 main().catch((error) => {
