@@ -1,5 +1,7 @@
 # MCP Server Installation Guide
 
+> **Last Updated:** January 2026
+
 This guide accompanies **Video 3: Install Your First MCP Server** from the [Gheware DevOps AI](https://www.youtube.com/@gheware-devops-ai) MCP Masterclass.
 
 📺 **Watch:** [Install MCP in 5 Minutes. (Yes, Really.)](https://www.youtube.com/watch?v=lbLNb2eNmf8)
@@ -10,8 +12,8 @@ This guide accompanies **Video 3: Install Your First MCP Server** from the [Ghew
 
 | Requirement | Version | Check Command |
 |-------------|---------|---------------|
-| Node.js | 18+ | `node --version` |
-| npm | 9+ | `npm --version` |
+| Node.js | 20+ LTS | `node --version` |
+| npm | 10+ | `npm --version` |
 
 ### MCP Host Application
 
@@ -53,7 +55,7 @@ npm --version    # Should show 10.x.x
 
 ```bash
 # Install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
 # Reload shell
 source ~/.bashrc
@@ -99,11 +101,27 @@ Use MCP servers directly with Claude Code (terminal-based):
 # Install Claude Code
 npm install -g @anthropic-ai/claude-code
 
-# Configure MCP in Claude Code settings
-claude config
+# Add MCP server (stdio - local servers)
+claude mcp add --transport stdio filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/Documents
+
+# Add MCP server (http - remote servers)
+claude mcp add --transport http notion https://mcp.notion.com/mcp
+
+# List configured servers
+claude mcp list
+
+# Check server status inside Claude Code
+/mcp
 ```
 
-**Claude Code MCP Config:** `~/.claude/settings.json`
+**Scope Options:**
+| Scope | Flag | Storage | Use Case |
+|-------|------|---------|----------|
+| local | `--scope local` | `.claude.json` (project) | Personal, project-specific |
+| project | `--scope project` | `.mcp.json` (shared) | Team collaboration |
+| user | `--scope user` | `~/.claude.json` | Cross-project tools |
+
+**Claude Code MCP Config:** `~/.claude.json` (user scope) or `.mcp.json` (project scope)
 
 #### Option 4: MCP Inspector (Testing Only)
 
@@ -173,8 +191,10 @@ Config file: `~/.config/Cursor/User/globalStorage/cursor.mcp/config.json`
 ```
 
 > ⚠️ **Replace `YOUR_USERNAME`** with your actual username!
-> 
+>
 > Find your username: `whoami`
+
+> ⚠️ **Security Note:** Only grant access to directories you're comfortable with AI reading and modifying. The MCP server runs with your user permissions and can perform any file operations you can manually perform.
 
 ### Step 3: Restart Your Application (30 sec)
 
@@ -194,6 +214,8 @@ Try these prompts:
 "Read the contents of README.md"
 
 "What text files do I have?"
+
+"Summarize the file notes.txt"
 ```
 
 ---
@@ -317,6 +339,21 @@ You can run multiple servers simultaneously:
 
 ## Troubleshooting
 
+### Log File Locations
+
+Check logs when servers aren't working:
+
+| Application | Platform | Log Location |
+|-------------|----------|--------------|
+| Claude Desktop | macOS | `~/Library/Logs/Claude/mcp.log` |
+| Claude Desktop | Windows | `%APPDATA%\Claude\logs\mcp.log` |
+| Cursor | All | Check Developer Tools (Help > Toggle Developer Tools) |
+
+**View Claude Desktop logs (macOS):**
+```bash
+tail -n 50 -f ~/Library/Logs/Claude/mcp*.log
+```
+
 ### Server Not Appearing
 
 | Symptom | Solution |
@@ -324,6 +361,7 @@ You can run multiple servers simultaneously:
 | No tools visible | Restart application completely |
 | "spawn ENOENT" | Use absolute paths in config |
 | Server crashes | Run `npm run build` again |
+| JSON syntax error | Validate config at jsonlint.com |
 
 ### Verify Node.js Path
 
@@ -359,8 +397,8 @@ Use the full path in your config for reliability.
 
 ## Verification Checklist
 
-- [ ] `node --version` shows 18+
-- [ ] `npm --version` shows 9+
+- [ ] `node --version` shows 20+
+- [ ] `npm --version` shows 10+
 - [ ] `npm run build` completes without errors
 - [ ] `npm run inspector` opens browser tool
 - [ ] MCP host shows tools available
@@ -390,7 +428,8 @@ Use the full path in your config for reliability.
 | Claude Desktop | macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | Claude Desktop | Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
 | Cursor | All | `~/.config/Cursor/User/globalStorage/cursor.mcp/config.json` |
-| Claude Code | All | `~/.claude/settings.json` |
+| Claude Code | User scope | `~/.claude.json` |
+| Claude Code | Project scope | `.mcp.json` (in project root) |
 
 ### Useful Commands
 
@@ -408,24 +447,66 @@ npm run dev
 which node
 ```
 
+### Claude Code MCP Commands
+
+```bash
+# Add stdio server (local)
+claude mcp add --transport stdio <name> -- <command> [args...]
+
+# Add HTTP server (remote)
+claude mcp add --transport http <name> <url>
+
+# Add with environment variable
+claude mcp add --transport stdio api --env API_KEY=xxx -- npx server
+
+# List all servers
+claude mcp list
+
+# Get server details
+claude mcp get <name>
+
+# Remove server
+claude mcp remove <name>
+
+# Check status (inside Claude Code)
+/mcp
+```
+
 ### Popular MCP Servers
 
 | Server | Install | Purpose |
 |--------|---------|---------|
-| Filesystem | `npx -y @modelcontextprotocol/server-filesystem ~/path` | Read local files |
-| GitHub | `npx -y @modelcontextprotocol/server-github` | Manage repos |
+| Filesystem | `npx -y @modelcontextprotocol/server-filesystem ~/path` | Read/write local files |
+| GitHub | `npx -y @modelcontextprotocol/server-github` | Manage repos, PRs, issues |
 | Postgres | `npx -y @modelcontextprotocol/server-postgres` | Query databases |
 | Memory | `npx -y @modelcontextprotocol/server-memory` | Persistent memory |
+| Brave Search | `npx -y @modelcontextprotocol/server-brave-search` | Web search |
+| Puppeteer | `npx -y @modelcontextprotocol/server-puppeteer` | Browser automation |
+| Slack | `npx -y @modelcontextprotocol/server-slack` | Slack integration |
+| Google Drive | `npx -y @modelcontextprotocol/server-gdrive` | Access Google Drive |
 
 ---
 
 ## Resources
 
-- [MCP Quickstart](https://modelcontextprotocol.io/quickstart)
-- [Claude Desktop Download](https://claude.ai/download) (macOS/Windows only)
-- [Cursor IDE](https://cursor.com) (All platforms)
-- [MCP Servers Repository](https://github.com/modelcontextprotocol/servers)
-- [NodeSource (Node.js for Ubuntu)](https://github.com/nodesource/distributions)
+### Official Documentation
+- [MCP Quickstart](https://modelcontextprotocol.io/quickstart) - Getting started guide
+- [MCP User Guide](https://modelcontextprotocol.io/quickstart/user) - Detailed setup instructions
+- [MCP Architecture](https://modelcontextprotocol.io/docs/concepts/architecture) - How MCP works
+
+### Downloads
+- [Claude Desktop](https://claude.ai/download) (macOS/Windows only)
+- [Cursor IDE](https://cursor.com) (All platforms including Linux)
+- [Node.js LTS](https://nodejs.org/) - Required runtime
+
+### Server Resources
+- [Official MCP Servers](https://github.com/modelcontextprotocol/servers) - Maintained by Anthropic
+- [MCP Server Registry](https://github.com/modelcontextprotocol/servers#available-servers) - Full list
+- [Building MCP Servers](https://modelcontextprotocol.io/quickstart/server) - Create your own
+
+### Linux-Specific
+- [NodeSource for Ubuntu](https://github.com/nodesource/distributions) - Node.js packages
+- [nvm (Node Version Manager)](https://github.com/nvm-sh/nvm) - Manage Node versions
 
 ---
 
